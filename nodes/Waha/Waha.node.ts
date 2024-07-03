@@ -197,7 +197,7 @@ export class Waha implements INodeType {
                 if (operation === 'sendText') {
                     const chatId = this.getNodeParameter('chatId', i) as string;
                     const text = this.getNodeParameter('text', i) as string;
-                    const session = 'default';
+                    const session = cred.session;
                     options.method = 'POST';
                     options.uri += '/sendText';
                     options.body = {
