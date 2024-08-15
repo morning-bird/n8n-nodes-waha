@@ -1,4 +1,3 @@
-
 import { IExecuteFunctions } from 'n8n-core';
 import {
     IBinaryData,
@@ -46,10 +45,16 @@ export class Waha implements INodeType {
                 },
                 options: [
                     {
-                        name: 'SendText',
+                        name: 'Send Text',
                         value: 'sendText',
                         action: 'Send text',
                         description: 'Send Text Message',
+                    },
+                    {
+                        name: 'Send Image',
+                        value: 'sendImage',
+                        action: 'Send image',
+                        description: 'Send Image Message',
                     },
                 ],
                 default: 'sendText',
@@ -100,7 +105,7 @@ export class Waha implements INodeType {
                 required: true,
                 displayOptions: {
                     show: {
-                        operation: ['sendText'],
+                        operation: ['sendText', 'sendImage'],
                         resource: ['chatting'],
                     },
                 },
@@ -121,6 +126,33 @@ export class Waha implements INodeType {
                 default: '',
                 placeholder: '',
                 description: 'Text to send',
+            },
+            {
+                displayName: 'Image',
+                name: 'image',
+                type: 'string',
+                required: true,
+                displayOptions: {
+                    show: {
+                        operation: ['sendImage'],
+                        resource: ['chatting'],
+                    },
+                },
+                default: '',
+                description: 'URL or Base64 of the image to send',
+            },
+            {
+                displayName: 'Caption',
+                name: 'caption',
+                type: 'string',
+                displayOptions: {
+                    show: {
+                        operation: ['sendImage'],
+                        resource: ['chatting'],
+                    },
+                },
+                default: '',
+                description: 'Caption for the image',
             },
             {
                 displayName: 'Operation',
@@ -177,50 +209,56 @@ export class Waha implements INodeType {
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
+								'X-Api-Key': '={{$credentials.apiKey}}',
             },
-            baseURL: '={{$credentials.url}}/api',
+            baseURL: '={{$credentials.apiUrl}}/api',
         },
     };
 
     async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-        const cred = await this.getCredentials('wahaApi');
+        const credentials = await this.getCredentials('wahaApi');
+				const sessionName = credentials.session as string || 'default';
+				const apiUrl = credentials.url as string;
         const items = this.getInputData();
         const returnData: INodeExecutionData[] = [];
         const resource = this.getNodeParameter('resource', 0);
         const operation = this.getNodeParameter('operation', 0) as string;
-        var options: OptionsWithUri = {
-            uri: `${cred.url}/api`,
-            json: true,
-        };
+
         for (let i = 0; i < items.length; i++) {
+            let endpoint = '';
+            let method = 'GET';
+            let body: any = {};
+
             if (resource === 'chatting') {
+                const chatId = this.getNodeParameter('chatId', i) as string;
+
                 if (operation === 'sendText') {
-                    const chatId = this.getNodeParameter('chatId', i) as string;
                     const text = this.getNodeParameter('text', i) as string;
-                    const session = 'default';
-                    options.method = 'POST';
-                    options.uri += '/sendText';
-                    options.body = {
-                        chatId: chatId,
-                        text: text,
-                        session: session,
+                    endpoint = '/sendText';
+                    method = 'POST';
+                    body = { chatId, text, session: sessionName };
+                } else if (operation === 'sendImage') {
+                    const image = this.getNodeParameter('image', i) as string;
+                    const caption = this.getNodeParameter('caption', i) as string;
+                    endpoint = '/sendImage';
+                    method = 'POST';
+                    body = {
+                        chatId,
+                        file: {
+                            url: image.startsWith('http') ? image : undefined,
+                            data: !image.startsWith('http') ? image : undefined,
+                        },
+                        caption,
+                        session: sessionName,
                     };
-                    const responseData = await this.helpers.requestWithAuthentication.call(
-                        this,
-                        'wahaApi',
-                        options,
-                    );
-                    returnData.push({
-                        json: responseData,
-                    });
                 }
             } else if (resource === 'session') {
                 if (operation === 'start') {
                     const url = this.getNodeParameter('webhookUrl', i) as string;
-                    options.method = 'POST';
-                    options.uri += '/sessions/start';
-                    options.body = {
-                        name: 'default',
+                    endpoint = '/sessions/start';
+                    method = 'POST';
+                    body = {
+                        name: sessionName,
                         config: {
                             proxy: null,
                             webhooks: [
@@ -234,93 +272,71 @@ export class Waha implements INodeType {
                             ],
                         },
                     };
-                    const responseData = await this.helpers.requestWithAuthentication.call(
-                        this,
-                        'wahaApi',
-                        options,
-                    );
-                    returnData.push({
-                        json: responseData,
-                    });
                 } else if (operation === 'stop') {
-                    options.method = 'POST';
-                    options.uri += '/sessions/stop';
-                    options.body = {
-                        name: cred.session,
+                    endpoint = '/sessions/stop';
+                    method = 'POST';
+                    body = {
+                        name: sessionName,
                         logout: false,
                     };
-                    const responseData = await this.helpers.requestWithAuthentication.call(
-                        this,
-                        'wahaApi',
-                        options,
-                    );
-                    returnData.push({
-                        json: responseData,
-                    });
                 } else if (operation === 'logout') {
-                    options.method = 'POST';
-                    options.uri += '/sessions/stop';
-                    options.body = {
-                        name: cred.session,
+                    endpoint = '/sessions/stop';
+                    method = 'POST';
+                    body = {
+                        name: sessionName,
+                        logout: true,
                     };
-                    const responseData = await this.helpers.requestWithAuthentication.call(
-                        this,
-                        'wahaApi',
-                        options,
-                    );
-                    returnData.push({
-                        json: responseData,
-                    });
                 } else if (operation === 'sessions') {
-                    options.method = 'GET';
-                    options.uri += '/sessions';
-                    options.qs = {
-                        all: 'true',
-                    };
-                    const responseData = await this.helpers.requestWithAuthentication.call(
-                        this,
-                        'wahaApi',
-                        options,
-                    );
-                    returnData.push({
-                        json: responseData,
-                    });
+                    endpoint = '/sessions';
+                    method = 'GET';
+                    body = { all: 'true' };
                 } else if (operation === 'me') {
-                    options.method = 'GET';
-                    options.uri += `/sessions/${cred.session}/me`;
-                    const responseData = await this.helpers.requestWithAuthentication.call(
-                        this,
-                        'wahaApi',
-                        options,
-                    );
-                    returnData.push({
-                        json: responseData,
-                    });
+                    endpoint = `/sessions/${sessionName}/me`;
+                    method = 'GET';
                 }
             } else if (resource === 'auth') {
                 if (operation === 'qr') {
-                    options.method = 'GET';
-                    options.uri += `/${cred.session}/auth/qr?format=image`;
-                    const responseData = await this.helpers.requestWithAuthentication.call(
-                        this,
-                        'wahaApi',
-                        options,
-                    );
-                    let fileName = 'qrcode.png';
+                    endpoint = `/${sessionName}/auth/qr`;
+                    method = 'GET';
+                    body = { format: 'image' };
+                }
+            }
+
+            const options: OptionsWithUri = {
+                method,
+                body,
+                qs: method === 'GET' ? body : undefined,
+                uri: `${apiUrl}/api${endpoint}`,
+                json: true,
+								headers: {
+									'X-Api-Key': credentials.apiKey as string,
+								},
+            };
+
+            try {
+                const responseData = await this.helpers.request(options);
+
+                if (resource === 'auth' && operation === 'qr') {
+                    const fileName = 'qrcode.png';
                     const mimeType = responseData.mimetype;
-                    // binaryData = Buffer.from(JSON.stringify(responseData));
                     const binaryPropertyName = 'qrcode';
                     const data = responseData.data;
                     const binary = {
                         [binaryPropertyName]: { data, fileName, mimeType } as IBinaryData,
                     } as IBinaryKeyData;
-                    returnData.push({
-                        json: responseData,
-                        binary,
-                    });
+                    returnData.push({ json: responseData, binary });
+                } else {
+                    returnData.push({ json: responseData });
                 }
+            } catch (error) {
+                if (this.continueOnFail()) {
+                    returnData.push({ json: { error: error.message } });
+                    continue;
+                }
+                throw error;
             }
         }
+
         return this.prepareOutputData(returnData);
     }
 }
