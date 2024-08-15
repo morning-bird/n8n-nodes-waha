@@ -8,12 +8,12 @@
 	"license": "MIT",
 	"homepage": "https://n8n.io",
 	"author": {
-		"name": "Renato",
-		"email": "renato.budiman07@gmail.com"
+		"name": "Victalejo",
+		"email": "admin@vicyalejo.com"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/morning-bird/n8n-nodes-waha.git"
+		"url": "https://github.com/victalejo/n8n-nodes-waha.git"
 	},
 	"main": "index.js",
 	"scripts": {
