@@ -1,47 +1,71 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
+# Nodo Waha para n8n
 
-# n8n-nodes-starter
+## Descripción
+El nodo Waha permite la integración con la API de WhatsApp HTTP (WAHA) en n8n, facilitando la automatización de tareas relacionadas con WhatsApp.
 
-This repo contains example nodes to help you get started building your own custom integrations for [n8n](n8n.io). It includes the node linter and other dependencies.
+## Configuración
 
-To make your custom node available to the community, you must create it as an npm package, and [submit it to the npm registry](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry).
+### Credenciales
+Para utilizar este nodo, necesitas configurar las credenciales de Waha API:
 
-## Prerequisites
+1. **API URL**: La URL base de tu API de WAHA (ej. https://wa.iaportafolio.com)
+2. **API Key**: Tu clave de API para autenticación
+3. **Session Name**: El nombre de la sesión de WhatsApp (por defecto es 'default')
 
-You need the following installed on your development machine:
+### Recursos y Operaciones
 
-* [git](https://git-scm.com/downloads)
-* Node.js and npm. Minimum version Node 16. You can find instructions on how to install both using nvm (Node Version Manager) for Linux, Mac, and WSL [here](https://github.com/nvm-sh/nvm). For Windows users, refer to Microsoft's guide to [Install NodeJS on Windows](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows).
-* Install n8n with:
-	```
-	npm install n8n -g
-	```
-* Recommended: follow n8n's guide to [set up your development environment](https://docs.n8n.io/integrations/creating-nodes/build/node-development-environment/).
+El nodo Waha ofrece los siguientes recursos y operaciones:
 
+1. **Chatting**
+   - Send Text: Envía un mensaje de texto
+   - Send Image: Envía una imagen
 
-## Using this starter
+2. **Session**
+   - Start: Inicia una nueva sesión
+   - Stop: Detiene una sesión
+   - Logout: Cierra la sesión
+   - Me: Obtiene información sobre la cuenta autenticada
+   - Sessions: Lista todas las sesiones
 
-These are the basic steps for working with the starter. For detailed guidance on creating and publishing nodes, refer to the [documentation](https://docs.n8n.io/integrations/creating-nodes/).
+3. **Auth**
+   - QR: Obtiene el código QR para autenticación
 
-1. [Generate a new repository](https://github.com/n8n-io/n8n-nodes-starter/generate) from this template repository.
-2. Clone your new repo:
-    ```
-    git clone https://github.com/<your organization>/<your-repo-name>.git
-    ```
-3. Run `npm i` to install dependencies.
-4. Open the project in your editor.
-5. Browse the examples in `/nodes` and `/credentials`. Modify the examples, or replace them with your own nodes.
-6. Update the `package.json` to match your details.
-7. Run `npm run lint` to check for errors or `npm run lintfix` to automatically fix errors when possible.
-8. Test your node locally. Refer to [Run your node locally](https://docs.n8n.io/integrations/creating-nodes/test/run-node-locally/) for guidance.
-9. Replace this README with documentation for your node. Use the [README_TEMPLATE](README_TEMPLATE.md) to get started.
-10. Update the LICENSE file to use your details.
-11. [Publish](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry) your package to npm.
+## Uso
 
-## More information
+### Enviar un mensaje de texto
 
-Refer to our [documentation on creating nodes](https://docs.n8n.io/integrations/creating-nodes/) for detailed information on building your own nodes.
+1. Selecciona el recurso "Chatting"
+2. Elige la operación "Send Text"
+3. Proporciona el Chat ID (ej. 123456789@c.us)
+4. Ingresa el texto del mensaje
 
-## License
+### Iniciar una sesión
 
-[MIT](https://github.com/n8n-io/n8n-nodes-starter/blob/master/LICENSE.md)
+1. Selecciona el recurso "Session"
+2. Elige la operación "Start"
+3. Proporciona la URL del webhook para recibir eventos
+
+### Obtener código QR
+
+1. Selecciona el recurso "Auth"
+2. Elige la operación "QR"
+
+## Notas importantes
+
+- Asegúrate de que la sesión esté iniciada antes de enviar mensajes.
+- El Chat ID debe estar en el formato correcto (número@c.us para chats individuales, id@g.us para grupos).
+- Para enviar imágenes, puedes proporcionar una URL o datos en base64.
+
+## Solución de problemas
+
+- Si experimentas problemas de autenticación, verifica que la API Key sea correcta.
+- Si la URL de la API no funciona, asegúrate de que esté correctamente configurada en las credenciales.
+- Para problemas con sesiones específicas, verifica que el nombre de la sesión sea correcto.
+
+## Ejemplo de flujo de trabajo
+
+1. Nodo Waha (Session - Start): Inicia la sesión de WhatsApp
+2. Nodo Waha (Chatting - Send Text): Envía un mensaje de texto
+3. Nodo Waha (Auth - QR): Obtiene el código QR si es necesario para la autenticación
+
+Este flujo inicia una sesión, envía un mensaje y proporciona un código QR si se requiere autenticación adicional.
